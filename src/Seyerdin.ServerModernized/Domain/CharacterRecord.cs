@@ -53,4 +53,14 @@ public sealed class CharacterRecord
     public short SkillPoints { get; set; }
 
     public string GuildName { get; set; } = string.Empty;
+
+    public short MapId { get; set; } = 1;
+
+    public byte X { get; set; } = 5;
+
+    public byte Y { get; set; } = 5;
+
+    public byte Direction { get; set; }
+
+    public byte WalkCode { get; set; }
 }

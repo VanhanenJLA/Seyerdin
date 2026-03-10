@@ -116,6 +116,8 @@ public sealed class LegacyCompatibilityServer
         return connection.State switch
         {
             LegacySessionState.NotConnected => HandlePreLoginPacketAsync(connection, stream, packet, cancellationToken),
+            LegacySessionState.Connected => HandleConnectedPacketAsync(connection, stream, packet, cancellationToken),
+            LegacySessionState.Playing => HandlePlayingPacketAsync(connection, stream, packet, cancellationToken),
             _ => HandleConnectedPacketAsync(connection, stream, packet, cancellationToken),
         };
     }
@@ -165,6 +167,7 @@ public sealed class LegacyCompatibilityServer
             2 => HandleCreateCharacterAsync(connection, stream, packet, cancellationToken),
             3 => HandleChangePasswordAsync(connection, stream, packet, cancellationToken),
             4 => HandleDeleteAccountAsync(connection, stream, packet, cancellationToken),
+            5 => HandlePlayAsync(connection, stream, cancellationToken),
             _ => LogIgnoredConnectedPacket(packet),
         };
     }
@@ -172,6 +175,12 @@ public sealed class LegacyCompatibilityServer
     private Task<bool> LogIgnoredConnectedPacket(LegacyPacket packet)
     {
         Console.WriteLine($"Ignoring unimplemented connected packet {packet.PacketId} ({packet.Payload.Length} bytes).");
+        return Task.FromResult(false);
+    }
+
+    private Task<bool> LogIgnoredPlayingPacket(LegacyPacket packet)
+    {
+        Console.WriteLine($"Ignoring unimplemented playing packet {packet.PacketId} ({packet.Payload.Length} bytes).");
         return Task.FromResult(false);
     }
 
@@ -433,6 +442,51 @@ public sealed class LegacyCompatibilityServer
         await accountStore.DeleteAsync(connection.Account.UserName, cancellationToken);
         connection.Account = null;
         return true;
+    }
+
+    private async Task<bool> HandlePlayAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        CancellationToken cancellationToken)
+    {
+        if (connection.Account?.Character is null || connection.Account.Character.Level == 0)
+        {
+            return true;
+        }
+
+        connection.State = LegacySessionState.Playing;
+        await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildJoinedGameBody(), cancellationToken);
+        await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildHourBody(12), cancellationToken);
+        await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildJoinedMapBody(connection.Account.Character), cancellationToken);
+        return false;
+    }
+
+    private async Task<bool> HandlePlayingPacketAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        LegacyPacket packet,
+        CancellationToken cancellationToken)
+    {
+        switch (packet.PacketId)
+        {
+            case 29:
+                return false;
+            case 30:
+                return true;
+            case 45:
+                if (packet.Payload.Length != 0)
+                {
+                    return true;
+                }
+
+                await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildMapDataBody(), cancellationToken);
+                await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildDoneSendingMapBody(), cancellationToken);
+                return false;
+            case 92:
+                return false;
+            default:
+                return await LogIgnoredPlayingPacket(packet);
+        }
     }
 
     private async Task SendRegistryPingResponseAsync(NetworkStream stream, CancellationToken cancellationToken)

@@ -43,6 +43,7 @@ Current scope:
 - Handles packet `2` (`Create New Character`) in the connected state and populates starter stats from `Server/classes.ini`
 - Handles packet `3` (`Change Password`) and packet `4` (`Delete Account`) against the JSON-backed account store
 - Supports developer overrides for `--port`, `--accounts`, and `--motd` so the new server can be run beside the legacy one during migration
+- Implements a thin `Play` path that transitions into `Joined Game` and `Joined Map`, then serves a zeroed legacy map body on packet `45` so the client can enter an empty world shell
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 
@@ -50,10 +51,11 @@ This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Ca
 
 1. Add protocol fixtures for the login/version handshake packets (`61`, `1`, `0`, `29`, `92`, `93`).
 2. Extract a written packet catalog from `ReadClientData.bas` before implementing more handlers.
-3. Decide whether to implement a compatibility `Play` flow next or bypass it in favor of a cleaner post-login state machine.
-4. Define modern domain models for inventory, guild, and map state instead of copying VB6 globals directly.
-5. Introduce a one-way importer from `server.dat`.
-6. Treat scripting as an adapter boundary; do not design the new server around `script.dll`.
+3. Replace the zero-map shell with real map loading and version/checksum generation.
+4. Decide whether to continue emulating the legacy static-data bootstrap (`SendDataPacket` / `SendItemPacket`) or retire it behind a cleaner client/server contract.
+5. Define modern domain models for inventory, guild, and map state instead of copying VB6 globals directly.
+6. Introduce a one-way importer from `server.dat`.
+7. Treat scripting as an adapter boundary; do not design the new server around `script.dll`.
 
 ## Target shape
 
