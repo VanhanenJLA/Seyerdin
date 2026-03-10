@@ -29,6 +29,14 @@ internal static class ProgramEntry
                 toolOptions.ImportMapId);
         }
 
+        if (!string.IsNullOrWhiteSpace(toolOptions.ImportBundlePath))
+        {
+            return LegacyBundleImportCommand.Run(
+                toolOptions.ImportBundlePath,
+                options.ContentFilePath,
+                options.MapsDirectoryPath);
+        }
+
         var server = new LegacyCompatibilityServer(options);
 
         Console.WriteLine(

@@ -49,6 +49,7 @@ Current scope:
 - Can inspect a raw legacy map blob with `--inspect-map <path>` to verify size and key header fields before using it in the modern map store
 - Can import a validated raw map blob into the modern map store with `--import-map <path> [--map-id <id>]`
 - Implements the legacy static bootstrap paging flow (`packet 35` -> `packet 24` -> `packet 23`) using a JSON-backed content catalog in `data/modernized/content.json`
+- Can import a Windows-exported bundle with `--import-bundle <dir>` where the directory contains `Objects.csv`, `Monsters.csv`, `NPCs.csv`, `Halls.csv`, `Guilds.csv`, `Prefix.csv`, `Lights.csv`, and optionally `maps/`
 
 ## Content catalog
 
@@ -63,6 +64,30 @@ Use `data/modernized/content.sample.json` as the starter shape for:
 - `guilds`
 - `prefixes`
 - `lights`
+
+## Bundle import
+
+The importer expects a directory layout like:
+
+```text
+bundle/
+  Objects.csv
+  Monsters.csv
+  NPCs.csv
+  Halls.csv
+  Guilds.csv
+  Prefix.csv
+  Lights.csv
+  maps/
+    1.map
+    2.map
+```
+
+Run:
+
+```bash
+dotnet run --project src/Seyerdin.ServerModernized -- --import-bundle /path/to/bundle
+```
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 

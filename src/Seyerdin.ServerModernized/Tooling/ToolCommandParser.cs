@@ -10,6 +10,7 @@ public static class ToolCommandParser
         string? inspectMapPath = null;
         string? importMapPath = null;
         short? importMapId = null;
+        string? importBundlePath = null;
 
         for (var i = 0; i < args.Count; i++)
         {
@@ -35,6 +36,10 @@ public static class ToolCommandParser
                     importMapId = mapId;
                 }
             }
+            else if (args[i] == "--import-bundle" && i + 1 < args.Count)
+            {
+                importBundlePath = args[++i];
+            }
         }
 
         return new ToolCommandOptions
@@ -43,6 +48,7 @@ public static class ToolCommandParser
             InspectMapPath = inspectMapPath,
             ImportMapPath = importMapPath,
             ImportMapId = importMapId,
+            ImportBundlePath = importBundlePath,
         };
     }
 }

@@ -9,4 +9,6 @@ public sealed class ToolCommandOptions
     public string? ImportMapPath { get; init; }
 
     public short? ImportMapId { get; init; }
+
+    public string? ImportBundlePath { get; init; }
 }
