@@ -15,4 +15,6 @@ public sealed class ServerOptions
     public string Motd { get; init; } = string.Empty;
 
     public string AccountsFilePath { get; init; } = Path.Combine("data", "modernized", "accounts.json");
+
+    public string ClassesFilePath { get; init; } = Path.Combine("Server", "classes.ini");
 }

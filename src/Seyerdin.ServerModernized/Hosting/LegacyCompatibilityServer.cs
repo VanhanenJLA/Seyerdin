@@ -13,6 +13,7 @@ public sealed class LegacyCompatibilityServer
     private readonly ServerOptions options;
     private readonly TcpListener listener;
     private readonly ILegacyAccountStore accountStore;
+    private readonly LegacyClassCatalog classCatalog;
     private readonly HashSet<string> activeUsers = new(StringComparer.OrdinalIgnoreCase);
     private readonly object activeUsersGate = new();
     private byte nextPlayerIndex = 1;
@@ -22,6 +23,7 @@ public sealed class LegacyCompatibilityServer
         this.options = options;
         listener = new TcpListener(IPAddress.Any, options.Port);
         accountStore = new JsonLegacyAccountStore(options.AccountsFilePath);
+        classCatalog = LegacyClassCatalog.Load(options.ClassesFilePath);
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -157,6 +159,15 @@ public sealed class LegacyCompatibilityServer
         NetworkStream stream,
         LegacyPacket packet,
         CancellationToken cancellationToken)
+    {
+        return packet.PacketId switch
+        {
+            2 => HandleCreateCharacterAsync(connection, stream, packet, cancellationToken),
+            _ => LogIgnoredConnectedPacket(packet),
+        };
+    }
+
+    private Task<bool> LogIgnoredConnectedPacket(LegacyPacket packet)
     {
         Console.WriteLine($"Ignoring unimplemented connected packet {packet.PacketId} ({packet.Payload.Length} bytes).");
         return Task.FromResult(false);
@@ -299,6 +310,87 @@ public sealed class LegacyCompatibilityServer
             await SendPacketAsync(stream, 4, LegacyEncoding.GetBytes(options.Motd), cancellationToken);
         }
 
+        return false;
+    }
+
+    private async Task<bool> HandleCreateCharacterAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        LegacyPacket packet,
+        CancellationToken cancellationToken)
+    {
+        if (connection.Account is null)
+        {
+            return true;
+        }
+
+        var payload = packet.Payload;
+        if (payload.Length < 4)
+        {
+            return true;
+        }
+
+        var separatorIndex = Array.IndexOf(payload, (byte)0, 3);
+        if (separatorIndex < 0)
+        {
+            return true;
+        }
+
+        var characterName = LegacyEncoding.GetString(payload.AsSpan(3, separatorIndex - 3)).Trim();
+
+        if (characterName.Length is < 3 or > 16 || !LegacyEncoding.IsValidName(characterName))
+        {
+            return true;
+        }
+
+        if (await accountStore.ExistsCharacterNameAsync(characterName, connection.UserName, cancellationToken))
+        {
+            await SendPacketAsync(stream, 13, ReadOnlyMemory<byte>.Empty, cancellationToken);
+            return false;
+        }
+
+        var selectedClass = classCatalog.ResolveOrDefault(payload[0]);
+        var gender = payload[2] > 1 ? (byte)1 : payload[2];
+        var sprite = (byte)(181 + ((selectedClass.Id - 1) * 8) + (gender * 4));
+
+        connection.Account.Character = new CharacterRecord
+        {
+            Name = characterName,
+            Level = 1,
+            ClassId = selectedClass.Id,
+            Gender = gender,
+            Sprite = sprite,
+            Hp = selectedClass.StartHp,
+            Energy = selectedClass.StartEnergy,
+            Mana = selectedClass.StartMana,
+            MaxHp = selectedClass.StartHp,
+            MaxEnergy = selectedClass.StartEnergy,
+            MaxMana = selectedClass.StartMana,
+            Strength = selectedClass.StartStrength,
+            Agility = selectedClass.StartAgility,
+            Endurance = selectedClass.StartEndurance,
+            Wisdom = selectedClass.StartWisdom,
+            Constitution = selectedClass.StartConstitution,
+            Intelligence = selectedClass.StartIntelligence,
+            Status = 2,
+            GuildId = 0,
+            GuildRank = 0,
+            Experience = 0,
+            Squelched = 0,
+            StatusEffect = 0,
+            StatPoints = 3,
+            SkillPoints = 3,
+            GuildName = string.Empty,
+        };
+
+        await accountStore.UpdateAsync(connection.Account, cancellationToken);
+
+        var playerIndex = ReservePlayerIndex();
+        var characterPayload = LegacyPacketWriter.BuildCharacterDataPayload(
+            connection.Account.Character,
+            connection.Account.Access,
+            playerIndex);
+        await SendPacketBodyAsync(stream, characterPayload, cancellationToken);
         return false;
     }
 

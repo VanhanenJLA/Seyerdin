@@ -37,6 +37,22 @@ public sealed class JsonLegacyAccountStore : ILegacyAccountStore
         return await FindByUserNameAsync(userName, cancellationToken) is not null;
     }
 
+    public async Task<bool> ExistsCharacterNameAsync(string characterName, string? exceptUserName, CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var accounts = await LoadAsync(cancellationToken);
+            return accounts.Any(account =>
+                !string.Equals(account.UserName, exceptUserName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(account.Character?.Name, characterName, StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     public async Task CreateAsync(LegacyAccountRecord account, CancellationToken cancellationToken)
     {
         await gate.WaitAsync(cancellationToken);
@@ -50,6 +66,29 @@ public sealed class JsonLegacyAccountStore : ILegacyAccountStore
             }
 
             accounts.Add(account);
+            await SaveAsync(accounts, cancellationToken);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    public async Task UpdateAsync(LegacyAccountRecord account, CancellationToken cancellationToken)
+    {
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            var accounts = await LoadAsync(cancellationToken);
+            var index = accounts.FindIndex(existing =>
+                string.Equals(existing.UserName, account.UserName, StringComparison.OrdinalIgnoreCase));
+
+            if (index < 0)
+            {
+                throw new InvalidOperationException($"Account '{account.UserName}' does not exist.");
+            }
+
+            accounts[index] = account;
             await SaveAsync(accounts, cancellationToken);
         }
         finally
