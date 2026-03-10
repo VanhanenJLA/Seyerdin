@@ -46,6 +46,10 @@ public static class ServerOptionsLoader
                 overrides,
                 "AccountsFilePath",
                 Path.Combine("data", "modernized", "accounts.json")),
+            MapsDirectoryPath = GetString(
+                overrides,
+                "MapsDirectoryPath",
+                Path.Combine("data", "modernized", "maps")),
         };
     }
 
@@ -80,6 +84,9 @@ public static class ServerOptionsLoader
                     break;
                 case "--motd" when i + 1 < args.Count:
                     overrides["Motd"] = args[++i];
+                    break;
+                case "--maps" when i + 1 < args.Count:
+                    overrides["MapsDirectoryPath"] = args[++i];
                     break;
             }
         }

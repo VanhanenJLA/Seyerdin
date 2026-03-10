@@ -20,7 +20,7 @@ public static class LegacyWorldPacketFactory
         return new[] { (byte)110, hour };
     }
 
-    public static byte[] BuildJoinedMapBody(CharacterRecord character)
+    public static byte[] BuildJoinedMapBody(CharacterRecord character, LegacyMapDescriptor map)
     {
         Span<byte> body = stackalloc byte[15];
         body[0] = 12;
@@ -29,22 +29,41 @@ public static class LegacyWorldPacketFactory
         body[4] = character.Y;
         body[5] = character.Direction;
         body[6] = character.WalkCode;
-        BinaryPrimitives.WriteUInt32BigEndian(body[7..11], ShellMapVersion);
-        BinaryPrimitives.WriteUInt32BigEndian(body[11..15], unchecked((uint)ShellMapChecksum));
+        BinaryPrimitives.WriteUInt32BigEndian(body[7..11], unchecked((uint)map.Version));
+        BinaryPrimitives.WriteUInt32BigEndian(body[11..15], unchecked((uint)map.Checksum));
         return body.ToArray();
     }
 
-    public static byte[] BuildMapDataBody()
+    public static byte[] BuildMapDataBody(LegacyMapDescriptor map)
     {
         var body = new byte[1 + LegacyMapLength];
         body[0] = 21;
-        ShellMap.CopyTo(body, 1);
+        map.Data.CopyTo(body, 1);
         return body;
     }
 
     public static byte[] BuildDoneSendingMapBody()
     {
         return new[] { (byte)22 };
+    }
+
+    public static LegacyMapDescriptor CreateMapDescriptor(byte[] data)
+    {
+        if (data.Length != LegacyMapLength)
+        {
+            throw new ArgumentException($"Legacy map data must be exactly {LegacyMapLength} bytes.", nameof(data));
+        }
+
+        var version = ReadInt32BigEndian(data, 30);
+        var checksum = CalculateChecksum(data);
+        return new LegacyMapDescriptor(data, version, checksum);
+    }
+
+    public static byte[] CreateShellMapData()
+    {
+        var clone = new byte[ShellMap.Length];
+        ShellMap.CopyTo(clone, 0);
+        return clone;
     }
 
     private static byte[] BuildShellMapData()
@@ -88,5 +107,10 @@ public static class LegacyWorldPacketFactory
     {
         var bytes = LegacyEncoding.GetBytes(value);
         Array.Copy(bytes, 0, target, offset, Math.Min(length, bytes.Length));
+    }
+
+    private static int ReadInt32BigEndian(byte[] data, int offset)
+    {
+        return BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(offset, 4));
     }
 }

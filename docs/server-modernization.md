@@ -44,6 +44,7 @@ Current scope:
 - Handles packet `3` (`Change Password`) and packet `4` (`Delete Account`) against the JSON-backed account store
 - Supports developer overrides for `--port`, `--accounts`, and `--motd` so the new server can be run beside the legacy one during migration
 - Implements a thin `Play` path that transitions into `Joined Game` and `Joined Map`, then serves a zeroed legacy map body on packet `45` so the client can enter an empty world shell
+- Looks for raw legacy map blobs in `data/modernized/maps` via `--maps` before falling back to the built-in shell map
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 
@@ -51,7 +52,7 @@ This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Ca
 
 1. Add protocol fixtures for the login/version handshake packets (`61`, `1`, `0`, `29`, `92`, `93`).
 2. Extract a written packet catalog from `ReadClientData.bas` before implementing more handlers.
-3. Replace the zero-map shell with real map loading and version/checksum generation.
+3. Build an exporter/importer for `server.dat` so map blobs and static data can be written into the modern filesystem-backed stores.
 4. Decide whether to continue emulating the legacy static-data bootstrap (`SendDataPacket` / `SendItemPacket`) or retire it behind a cleaner client/server contract.
 5. Define modern domain models for inventory, guild, and map state instead of copying VB6 globals directly.
 6. Introduce a one-way importer from `server.dat`.

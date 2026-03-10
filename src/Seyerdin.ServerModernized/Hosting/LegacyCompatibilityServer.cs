@@ -14,6 +14,7 @@ public sealed class LegacyCompatibilityServer
     private readonly TcpListener listener;
     private readonly ILegacyAccountStore accountStore;
     private readonly LegacyClassCatalog classCatalog;
+    private readonly ILegacyMapStore mapStore;
     private readonly HashSet<string> activeUsers = new(StringComparer.OrdinalIgnoreCase);
     private readonly object activeUsersGate = new();
     private byte nextPlayerIndex = 1;
@@ -24,6 +25,7 @@ public sealed class LegacyCompatibilityServer
         listener = new TcpListener(IPAddress.Any, options.Port);
         accountStore = new JsonLegacyAccountStore(options.AccountsFilePath);
         classCatalog = LegacyClassCatalog.Load(options.ClassesFilePath);
+        mapStore = new FileSystemLegacyMapStore(options.MapsDirectoryPath);
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -457,7 +459,11 @@ public sealed class LegacyCompatibilityServer
         connection.State = LegacySessionState.Playing;
         await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildJoinedGameBody(), cancellationToken);
         await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildHourBody(12), cancellationToken);
-        await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildJoinedMapBody(connection.Account.Character), cancellationToken);
+        var map = LoadMap(connection.Account.Character.MapId);
+        await SendPacketBodyAsync(
+            stream,
+            LegacyWorldPacketFactory.BuildJoinedMapBody(connection.Account.Character, map),
+            cancellationToken);
         return false;
     }
 
@@ -479,7 +485,13 @@ public sealed class LegacyCompatibilityServer
                     return true;
                 }
 
-                await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildMapDataBody(), cancellationToken);
+                if (connection.Account?.Character is null)
+                {
+                    return true;
+                }
+
+                var map = LoadMap(connection.Account.Character.MapId);
+                await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildMapDataBody(map), cancellationToken);
                 await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildDoneSendingMapBody(), cancellationToken);
                 return false;
             case 92:
@@ -547,5 +559,11 @@ public sealed class LegacyCompatibilityServer
         }
 
         return nextPlayerIndex++;
+    }
+
+    private LegacyMapDescriptor LoadMap(short mapId)
+    {
+        var data = mapStore.LoadMapOrDefault(mapId);
+        return LegacyWorldPacketFactory.CreateMapDescriptor(data);
     }
 }
