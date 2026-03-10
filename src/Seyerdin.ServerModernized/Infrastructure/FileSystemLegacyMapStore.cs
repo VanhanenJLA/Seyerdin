@@ -30,6 +30,19 @@ public sealed class FileSystemLegacyMapStore : ILegacyMapStore
         return LegacyWorldPacketFactory.CreateShellMapData();
     }
 
+    public void Save(short mapId, byte[] data)
+    {
+        if (data.Length != LegacyWorldPacketFactory.LegacyMapLength)
+        {
+            throw new ArgumentException(
+                $"Legacy map data must be exactly {LegacyWorldPacketFactory.LegacyMapLength} bytes.",
+                nameof(data));
+        }
+
+        Directory.CreateDirectory(mapsDirectoryPath);
+        File.WriteAllBytes(LegacyMapStorePaths.GetPrimaryPath(mapsDirectoryPath, mapId), data);
+    }
+
     private IEnumerable<string> GetCandidatePaths(short mapId)
     {
         yield return Path.Combine(mapsDirectoryPath, $"{mapId}.map");

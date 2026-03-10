@@ -1,19 +1,35 @@
-using System.Globalization;
 using Seyerdin.ServerModernized.Configuration;
 using Seyerdin.ServerModernized.Hosting;
+using Seyerdin.ServerModernized.Tooling;
 
-var options = ServerOptionsLoader.Load(args);
-var server = new LegacyCompatibilityServer(options);
+return await ProgramEntry.RunAsync(args);
 
-Console.WriteLine(
-    $"Starting {options.ServerName} compatibility server on port {options.Port} " +
-    $"for legacy client version {options.CurrentClientVersion}.");
-
-using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, args) =>
+internal static class ProgramEntry
 {
-    args.Cancel = true;
-    cts.Cancel();
-};
+    public static async Task<int> RunAsync(string[] args)
+    {
+        var options = ServerOptionsLoader.Load(args);
+        var toolOptions = ToolCommandParser.Parse(args);
 
-await server.RunAsync(cts.Token);
+        if (toolOptions.SeedShellMapId is { } seedMapId)
+        {
+            return LegacyMapSeedCommand.Run(options.MapsDirectoryPath, seedMapId);
+        }
+
+        var server = new LegacyCompatibilityServer(options);
+
+        Console.WriteLine(
+            $"Starting {options.ServerName} compatibility server on port {options.Port} " +
+            $"for legacy client version {options.CurrentClientVersion}.");
+
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, eventArgs) =>
+        {
+            eventArgs.Cancel = true;
+            cts.Cancel();
+        };
+
+        await server.RunAsync(cts.Token);
+        return 0;
+    }
+}

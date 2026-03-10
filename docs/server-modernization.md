@@ -45,6 +45,7 @@ Current scope:
 - Supports developer overrides for `--port`, `--accounts`, and `--motd` so the new server can be run beside the legacy one during migration
 - Implements a thin `Play` path that transitions into `Joined Game` and `Joined Map`, then serves a zeroed legacy map body on packet `45` so the client can enter an empty world shell
 - Looks for raw legacy map blobs in `data/modernized/maps` via `--maps` before falling back to the built-in shell map
+- Can seed a filesystem-backed shell map with `--seed-shell-map <mapId>` to create a concrete map blob for client compatibility testing
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 
