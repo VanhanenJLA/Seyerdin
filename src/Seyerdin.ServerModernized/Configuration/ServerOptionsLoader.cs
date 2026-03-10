@@ -38,6 +38,8 @@ public static class ServerOptionsLoader
             ServerName = GetString(values, "Name", "Seyerdin"),
             MaxUsers = GetInt(values, "MaxUsers", 80),
             CurrentClientVersion = 58,
+            DownloadSite = "http://www.Seyerdin.com",
+            Motd = string.Empty,
         };
     }
 

@@ -45,6 +45,14 @@ public static class LegacyProtocolCodec
         return CreateFrame(packetId, payload, packetsSent, includeChecksum: true);
     }
 
+    public static byte[] CreateServerPacket(byte packetId, ReadOnlySpan<byte> payload)
+    {
+        var body = new byte[1 + payload.Length];
+        body[0] = packetId;
+        payload.CopyTo(body.AsSpan(1));
+        return CreateServerRawFrame(body);
+    }
+
     public static byte[] CreateServerRawFrame(ReadOnlySpan<byte> payload)
     {
         var frame = new byte[payload.Length + 2];

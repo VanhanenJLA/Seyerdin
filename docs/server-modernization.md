@@ -31,6 +31,15 @@ Current scope:
 - Responds to packet `5` (`Registry Ping`) with the same raw response shape used by the existing launcher:
   - byte 0: online user count
   - bytes 1-4: client version as a big-endian 32-bit integer
+- Tracks the legacy pre-login session state and handles:
+  - packet `61` (`Version`)
+  - packet `0` (`New Account`)
+  - packet `1` (`Log on`)
+  - packet `92` (`UID`)
+  - packet `93` (`iniUID`)
+  - packet `255` (`eek`)
+- Persists modernized test accounts in `data/modernized/accounts.json` instead of the legacy `server.dat`
+- Returns legacy packet `3` (`Character Data`) in the same shape the client expects, with support for the empty-character case used by newly created accounts
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 
@@ -38,9 +47,10 @@ This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Ca
 
 1. Add protocol fixtures for the login/version handshake packets (`61`, `1`, `0`, `29`, `92`, `93`).
 2. Extract a written packet catalog from `ReadClientData.bas` before implementing more handlers.
-3. Define modern domain models for account, character, inventory, guild, and map state instead of copying VB6 globals directly.
-4. Introduce a persistence abstraction and a one-way importer from `server.dat`.
-5. Treat scripting as an adapter boundary; do not design the new server around `script.dll`.
+3. Add character creation (`Case 2`) against the JSON account store so the client can get past the login shell.
+4. Define modern domain models for inventory, guild, and map state instead of copying VB6 globals directly.
+5. Introduce a one-way importer from `server.dat`.
+6. Treat scripting as an adapter boundary; do not design the new server around `script.dll`.
 
 ## Target shape
 
