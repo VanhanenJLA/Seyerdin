@@ -16,6 +16,11 @@ internal static class ProgramEntry
             return LegacyMapSeedCommand.Run(options.MapsDirectoryPath, seedMapId);
         }
 
+        if (!string.IsNullOrWhiteSpace(toolOptions.InspectMapPath))
+        {
+            return LegacyMapInspectCommand.Run(toolOptions.InspectMapPath);
+        }
+
         var server = new LegacyCompatibilityServer(options);
 
         Console.WriteLine(

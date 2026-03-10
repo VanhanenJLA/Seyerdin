@@ -46,6 +46,7 @@ Current scope:
 - Implements a thin `Play` path that transitions into `Joined Game` and `Joined Map`, then serves a zeroed legacy map body on packet `45` so the client can enter an empty world shell
 - Looks for raw legacy map blobs in `data/modernized/maps` via `--maps` before falling back to the built-in shell map
 - Can seed a filesystem-backed shell map with `--seed-shell-map <mapId>` to create a concrete map blob for client compatibility testing
+- Can inspect a raw legacy map blob with `--inspect-map <path>` to verify size and key header fields before using it in the modern map store
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 

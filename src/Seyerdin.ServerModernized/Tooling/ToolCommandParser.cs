@@ -7,6 +7,7 @@ public static class ToolCommandParser
     public static ToolCommandOptions Parse(IReadOnlyList<string> args)
     {
         short? seedShellMapId = null;
+        string? inspectMapPath = null;
 
         for (var i = 0; i < args.Count; i++)
         {
@@ -17,11 +18,16 @@ public static class ToolCommandParser
                     seedShellMapId = mapId;
                 }
             }
+            else if (args[i] == "--inspect-map" && i + 1 < args.Count)
+            {
+                inspectMapPath = args[++i];
+            }
         }
 
         return new ToolCommandOptions
         {
             SeedShellMapId = seedShellMapId,
+            InspectMapPath = inspectMapPath,
         };
     }
 }
