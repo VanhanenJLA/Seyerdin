@@ -8,6 +8,8 @@ public static class ToolCommandParser
     {
         short? seedShellMapId = null;
         string? inspectMapPath = null;
+        string? importMapPath = null;
+        short? importMapId = null;
 
         for (var i = 0; i < args.Count; i++)
         {
@@ -22,12 +24,25 @@ public static class ToolCommandParser
             {
                 inspectMapPath = args[++i];
             }
+            else if (args[i] == "--import-map" && i + 1 < args.Count)
+            {
+                importMapPath = args[++i];
+            }
+            else if (args[i] == "--map-id" && i + 1 < args.Count)
+            {
+                if (short.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out var mapId))
+                {
+                    importMapId = mapId;
+                }
+            }
         }
 
         return new ToolCommandOptions
         {
             SeedShellMapId = seedShellMapId,
             InspectMapPath = inspectMapPath,
+            ImportMapPath = importMapPath,
+            ImportMapId = importMapId,
         };
     }
 }

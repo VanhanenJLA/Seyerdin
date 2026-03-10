@@ -21,6 +21,14 @@ internal static class ProgramEntry
             return LegacyMapInspectCommand.Run(toolOptions.InspectMapPath);
         }
 
+        if (!string.IsNullOrWhiteSpace(toolOptions.ImportMapPath))
+        {
+            return LegacyMapImportCommand.Run(
+                options.MapsDirectoryPath,
+                toolOptions.ImportMapPath,
+                toolOptions.ImportMapId);
+        }
+
         var server = new LegacyCompatibilityServer(options);
 
         Console.WriteLine(
