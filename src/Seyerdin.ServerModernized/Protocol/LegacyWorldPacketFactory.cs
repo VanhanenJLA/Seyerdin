@@ -6,6 +6,9 @@ namespace Seyerdin.ServerModernized.Protocol;
 public static class LegacyWorldPacketFactory
 {
     public const int LegacyMapLength = 2379;
+    private static readonly byte[] ShellMap = BuildShellMapData();
+    private const int ShellMapVersion = 1;
+    private static readonly int ShellMapChecksum = CalculateChecksum(ShellMap);
 
     public static byte[] BuildJoinedGameBody()
     {
@@ -26,7 +29,8 @@ public static class LegacyWorldPacketFactory
         body[4] = character.Y;
         body[5] = character.Direction;
         body[6] = character.WalkCode;
-        // Version/checksum are left at zero for now; the client will request the map body.
+        BinaryPrimitives.WriteUInt32BigEndian(body[7..11], ShellMapVersion);
+        BinaryPrimitives.WriteUInt32BigEndian(body[11..15], unchecked((uint)ShellMapChecksum));
         return body.ToArray();
     }
 
@@ -34,11 +38,55 @@ public static class LegacyWorldPacketFactory
     {
         var body = new byte[1 + LegacyMapLength];
         body[0] = 21;
+        ShellMap.CopyTo(body, 1);
         return body;
     }
 
     public static byte[] BuildDoneSendingMapBody()
     {
         return new[] { (byte)22 };
+    }
+
+    private static byte[] BuildShellMapData()
+    {
+        var data = new byte[LegacyMapLength];
+
+        WriteFixedString(data, 0, 30, "Modernized Shell");
+        BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(30, 4), ShellMapVersion);
+        data[44] = 0;
+        data[45] = 1; // Boot map
+        data[46] = 5;
+        data[47] = 5;
+        data[49] = 120; // ambient intensity
+
+        for (var y = 0; y < 12; y++)
+        {
+            for (var x = 0; x < 12; x++)
+            {
+                var offset = 70 + (y * 192) + (x * 16);
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan(offset, 2), 1);
+                data[offset + 10] = 0; // walkable tile
+                data[offset + 15] = 0;
+            }
+        }
+
+        return data;
+    }
+
+    private static int CalculateChecksum(IEnumerable<byte> bytes)
+    {
+        var sum = 0;
+        foreach (var value in bytes)
+        {
+            sum += value;
+        }
+
+        return sum;
+    }
+
+    private static void WriteFixedString(byte[] target, int offset, int length, string value)
+    {
+        var bytes = LegacyEncoding.GetBytes(value);
+        Array.Copy(bytes, 0, target, offset, Math.Min(length, bytes.Length));
     }
 }
