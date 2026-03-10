@@ -163,6 +163,8 @@ public sealed class LegacyCompatibilityServer
         return packet.PacketId switch
         {
             2 => HandleCreateCharacterAsync(connection, stream, packet, cancellationToken),
+            3 => HandleChangePasswordAsync(connection, stream, packet, cancellationToken),
+            4 => HandleDeleteAccountAsync(connection, stream, packet, cancellationToken),
             _ => LogIgnoredConnectedPacket(packet),
         };
     }
@@ -392,6 +394,45 @@ public sealed class LegacyCompatibilityServer
             playerIndex);
         await SendPacketBodyAsync(stream, characterPayload, cancellationToken);
         return false;
+    }
+
+    private async Task<bool> HandleChangePasswordAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        LegacyPacket packet,
+        CancellationToken cancellationToken)
+    {
+        if (connection.Account is null || packet.Payload.Length == 0)
+        {
+            return true;
+        }
+
+        var newPassword = LegacyEncoding.GetString(packet.PayloadMemory.Span);
+        connection.Account.PasswordCipherText = LegacyEncoding.Cryp(newPassword);
+        await accountStore.UpdateAsync(connection.Account, cancellationToken);
+        await SendPacketAsync(stream, 5, ReadOnlyMemory<byte>.Empty, cancellationToken);
+        return false;
+    }
+
+    private async Task<bool> HandleDeleteAccountAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        LegacyPacket packet,
+        CancellationToken cancellationToken)
+    {
+        if (connection.Account is null)
+        {
+            return true;
+        }
+
+        if (packet.Payload.Length != 0)
+        {
+            return true;
+        }
+
+        await accountStore.DeleteAsync(connection.Account.UserName, cancellationToken);
+        connection.Account = null;
+        return true;
     }
 
     private async Task SendRegistryPingResponseAsync(NetworkStream stream, CancellationToken cancellationToken)

@@ -41,6 +41,7 @@ Current scope:
 - Persists modernized test accounts in `data/modernized/accounts.json` instead of the legacy `server.dat`
 - Returns legacy packet `3` (`Character Data`) in the same shape the client expects, with support for the empty-character case used by newly created accounts
 - Handles packet `2` (`Create New Character`) in the connected state and populates starter stats from `Server/classes.ini`
+- Handles packet `3` (`Change Password`) and packet `4` (`Delete Account`) against the JSON-backed account store
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 
@@ -48,11 +49,10 @@ This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Ca
 
 1. Add protocol fixtures for the login/version handshake packets (`61`, `1`, `0`, `29`, `92`, `93`).
 2. Extract a written packet catalog from `ReadClientData.bas` before implementing more handlers.
-3. Add password change and delete-account flows (`Case 3` and `Case 4`) for parity with the connected shell.
-4. Decide whether to implement a compatibility `Play` flow next or bypass it in favor of a cleaner post-login state machine.
-5. Define modern domain models for inventory, guild, and map state instead of copying VB6 globals directly.
-6. Introduce a one-way importer from `server.dat`.
-7. Treat scripting as an adapter boundary; do not design the new server around `script.dll`.
+3. Decide whether to implement a compatibility `Play` flow next or bypass it in favor of a cleaner post-login state machine.
+4. Define modern domain models for inventory, guild, and map state instead of copying VB6 globals directly.
+5. Introduce a one-way importer from `server.dat`.
+6. Treat scripting as an adapter boundary; do not design the new server around `script.dll`.
 
 ## Target shape
 

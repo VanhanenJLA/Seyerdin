@@ -13,4 +13,6 @@ public interface ILegacyAccountStore
     Task CreateAsync(LegacyAccountRecord account, CancellationToken cancellationToken);
 
     Task UpdateAsync(LegacyAccountRecord account, CancellationToken cancellationToken);
+
+    Task DeleteAsync(string userName, CancellationToken cancellationToken);
 }
