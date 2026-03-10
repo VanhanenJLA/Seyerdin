@@ -50,6 +50,10 @@ public static class ServerOptionsLoader
                 overrides,
                 "MapsDirectoryPath",
                 Path.Combine("data", "modernized", "maps")),
+            ContentFilePath = GetString(
+                overrides,
+                "ContentFilePath",
+                Path.Combine("data", "modernized", "content.json")),
         };
     }
 
@@ -87,6 +91,9 @@ public static class ServerOptionsLoader
                     break;
                 case "--maps" when i + 1 < args.Count:
                     overrides["MapsDirectoryPath"] = args[++i];
+                    break;
+                case "--content" when i + 1 < args.Count:
+                    overrides["ContentFilePath"] = args[++i];
                     break;
             }
         }

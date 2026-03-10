@@ -48,6 +48,21 @@ Current scope:
 - Can seed a filesystem-backed shell map with `--seed-shell-map <mapId>` to create a concrete map blob for client compatibility testing
 - Can inspect a raw legacy map blob with `--inspect-map <path>` to verify size and key header fields before using it in the modern map store
 - Can import a validated raw map blob into the modern map store with `--import-map <path> [--map-id <id>]`
+- Implements the legacy static bootstrap paging flow (`packet 35` -> `packet 24` -> `packet 23`) using a JSON-backed content catalog in `data/modernized/content.json`
+
+## Content catalog
+
+The modern bootstrap path reads content from `data/modernized/content.json`.
+
+Use `data/modernized/content.sample.json` as the starter shape for:
+
+- `objects`
+- `monsters`
+- `npcs`
+- `halls`
+- `guilds`
+- `prefixes`
+- `lights`
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 

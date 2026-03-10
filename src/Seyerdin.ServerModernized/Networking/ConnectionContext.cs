@@ -29,4 +29,6 @@ public sealed class ConnectionContext
     public string IniUniqueId { get; set; } = string.Empty;
 
     public LegacyAccountRecord? Account { get; set; }
+
+    public bool BootstrapStarted { get; set; }
 }

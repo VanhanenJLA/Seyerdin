@@ -1,0 +1,47 @@
+{
+  "objects": [
+    {
+      "id": 1,
+      "name": "Training Sword",
+      "description": "A simple starter weapon.",
+      "picture": 1,
+      "type": 1,
+      "data": [10, 1, 4, 0, 0, 0, 0, 0, 0, 0],
+      "flags": 0,
+      "classMask": 0,
+      "minLevel": 1,
+      "equipmentPicture": 1
+    }
+  ],
+  "monsters": [
+    {
+      "id": 1,
+      "name": "Training Dummy",
+      "sprite": 1,
+      "hp": 25,
+      "flags": 0,
+      "deathSound": 0,
+      "attackSound": 0,
+      "alpha": 0,
+      "red": 0,
+      "green": 0,
+      "blue": 0,
+      "light": 0,
+      "flags2": 0
+    }
+  ],
+  "npcs": [
+    {
+      "id": 1,
+      "name": "Guide",
+      "flags": 0,
+      "portrait": 1,
+      "sprite": 1,
+      "direction": 0
+    }
+  ],
+  "halls": [],
+  "guilds": [],
+  "prefixes": [],
+  "lights": []
+}

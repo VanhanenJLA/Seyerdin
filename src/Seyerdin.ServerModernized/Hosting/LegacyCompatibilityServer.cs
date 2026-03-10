@@ -15,6 +15,7 @@ public sealed class LegacyCompatibilityServer
     private readonly ILegacyAccountStore accountStore;
     private readonly LegacyClassCatalog classCatalog;
     private readonly ILegacyMapStore mapStore;
+    private readonly LegacyBootstrapPacketFactory bootstrapPacketFactory;
     private readonly HashSet<string> activeUsers = new(StringComparer.OrdinalIgnoreCase);
     private readonly object activeUsersGate = new();
     private byte nextPlayerIndex = 1;
@@ -26,6 +27,8 @@ public sealed class LegacyCompatibilityServer
         accountStore = new JsonLegacyAccountStore(options.AccountsFilePath);
         classCatalog = LegacyClassCatalog.Load(options.ClassesFilePath);
         mapStore = new FileSystemLegacyMapStore(options.MapsDirectoryPath);
+        bootstrapPacketFactory = new LegacyBootstrapPacketFactory(
+            LegacyContentCatalogLoader.Load(options.ContentFilePath));
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -170,6 +173,8 @@ public sealed class LegacyCompatibilityServer
             3 => HandleChangePasswordAsync(connection, stream, packet, cancellationToken),
             4 => HandleDeleteAccountAsync(connection, stream, packet, cancellationToken),
             5 => HandlePlayAsync(connection, stream, cancellationToken),
+            23 => HandleBootstrapCompleteAsync(connection, stream, packet, cancellationToken),
+            24 => HandleBootstrapNextAsync(connection, stream, packet, cancellationToken),
             _ => LogIgnoredConnectedPacket(packet),
         };
     }
@@ -456,6 +461,53 @@ public sealed class LegacyCompatibilityServer
             return true;
         }
 
+        connection.BootstrapStarted = true;
+        await SendPacketBodyAsync(stream, bootstrapPacketFactory.BuildDataChunk(1), cancellationToken);
+        return false;
+    }
+
+    private async Task<bool> HandleBootstrapNextAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        LegacyPacket packet,
+        CancellationToken cancellationToken)
+    {
+        if (!connection.BootstrapStarted || packet.Payload.Length != 3)
+        {
+            return true;
+        }
+
+        var pageType = packet.Payload[0];
+        var startIndex = (short)((packet.Payload[1] << 8) | packet.Payload[2]);
+
+        byte[] chunk = pageType switch
+        {
+            1 => bootstrapPacketFactory.BuildDataChunk(startIndex),
+            2 => bootstrapPacketFactory.BuildItemChunk(startIndex),
+            _ => Array.Empty<byte>(),
+        };
+
+        if (chunk.Length == 0)
+        {
+            return true;
+        }
+
+        await SendPacketBodyAsync(stream, chunk, cancellationToken);
+        return false;
+    }
+
+    private async Task<bool> HandleBootstrapCompleteAsync(
+        ConnectionContext connection,
+        NetworkStream stream,
+        LegacyPacket packet,
+        CancellationToken cancellationToken)
+    {
+        if (!connection.BootstrapStarted || packet.Payload.Length != 0 || connection.Account?.Character is null)
+        {
+            return true;
+        }
+
+        connection.BootstrapStarted = false;
         connection.State = LegacySessionState.Playing;
         await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildJoinedGameBody(), cancellationToken);
         await SendPacketBodyAsync(stream, LegacyWorldPacketFactory.BuildHourBody(12), cancellationToken);

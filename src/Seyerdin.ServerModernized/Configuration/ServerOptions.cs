@@ -19,4 +19,6 @@ public sealed class ServerOptions
     public string ClassesFilePath { get; init; } = Path.Combine("Server", "classes.ini");
 
     public string MapsDirectoryPath { get; init; } = Path.Combine("data", "modernized", "maps");
+
+    public string ContentFilePath { get; init; } = Path.Combine("data", "modernized", "content.json");
 }
