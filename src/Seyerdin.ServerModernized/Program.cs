@@ -1,7 +1,8 @@
+using System.Globalization;
 using Seyerdin.ServerModernized.Configuration;
 using Seyerdin.ServerModernized.Hosting;
 
-var options = ServerOptionsLoader.Load();
+var options = ServerOptionsLoader.Load(args);
 var server = new LegacyCompatibilityServer(options);
 
 Console.WriteLine(

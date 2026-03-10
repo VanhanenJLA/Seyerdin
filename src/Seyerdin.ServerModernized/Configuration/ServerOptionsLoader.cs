@@ -6,7 +6,7 @@ public static class ServerOptionsLoader
 {
     private const string LegacyIniPath = "Server/Server.ini";
 
-    public static ServerOptions Load()
+    public static ServerOptions Load(string[]? args = null)
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -32,14 +32,20 @@ public static class ServerOptionsLoader
             }
         }
 
+        var overrides = ParseOverrides(args ?? Array.Empty<string>());
+
         return new ServerOptions
         {
-            Port = GetInt(values, "Port", 3017),
+            Port = GetInt(overrides, "Port", GetInt(values, "Port", 3017)),
             ServerName = GetString(values, "Name", "Seyerdin"),
             MaxUsers = GetInt(values, "MaxUsers", 80),
             CurrentClientVersion = 58,
             DownloadSite = "http://www.Seyerdin.com",
-            Motd = string.Empty,
+            Motd = GetString(overrides, "Motd", string.Empty),
+            AccountsFilePath = GetString(
+                overrides,
+                "AccountsFilePath",
+                Path.Combine("data", "modernized", "accounts.json")),
         };
     }
 
@@ -56,5 +62,28 @@ public static class ServerOptionsLoader
         return values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
             ? value
             : fallback;
+    }
+
+    private static Dictionary<string, string> ParseOverrides(IReadOnlyList<string> args)
+    {
+        var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < args.Count; i++)
+        {
+            switch (args[i])
+            {
+                case "--port" when i + 1 < args.Count:
+                    overrides["Port"] = args[++i];
+                    break;
+                case "--accounts" when i + 1 < args.Count:
+                    overrides["AccountsFilePath"] = args[++i];
+                    break;
+                case "--motd" when i + 1 < args.Count:
+                    overrides["Motd"] = args[++i];
+                    break;
+            }
+        }
+
+        return overrides;
     }
 }

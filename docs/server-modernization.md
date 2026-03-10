@@ -42,6 +42,7 @@ Current scope:
 - Returns legacy packet `3` (`Character Data`) in the same shape the client expects, with support for the empty-character case used by newly created accounts
 - Handles packet `2` (`Create New Character`) in the connected state and populates starter stats from `Server/classes.ini`
 - Handles packet `3` (`Change Password`) and packet `4` (`Delete Account`) against the JSON-backed account store
+- Supports developer overrides for `--port`, `--accounts`, and `--motd` so the new server can be run beside the legacy one during migration
 
 This corresponds to the legacy behavior in `Server/ReadClientData.bas` under `Case 5 'Registry Ping'`.
 
